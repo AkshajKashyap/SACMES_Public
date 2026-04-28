@@ -55,6 +55,11 @@ from data_io import (
     read_data as data_io_read_data,
 )
 from export_text import TextFileExport, set_runtime_module as set_text_export_runtime_module
+from normalization_math import (
+    calculate_kdm,
+    calculate_low_frequency_offset,
+    calculate_normalized_ratio,
+)
 from sacmes_shared import (
     AnalysisMethod,
     Delimiter,
@@ -3802,13 +3807,8 @@ class ElectrochemicalAnimation():
         high_count = global_frequency_dict[local_high_frequency]
         high_point = global_normalized_data_list[self.num][high_count][self.index]
         low_point = global_offset_normalized_data_list[self.num][self.index]
-        normalized_ratio = high_point/low_point
-        match global_kdm_method:
-            case KDMMethod.OLD:
-                kdm = (high_point - low_point) + 1
-            case KDMMethod.NEW:
-                average = 0.5*(high_point + low_point)
-                kdm = (high_point - low_point)/average + 1
+        normalized_ratio = calculate_normalized_ratio(high_point, low_point)
+        kdm = calculate_kdm(high_point, low_point, global_kdm_method)
         #-- save the data to global lists --#
         global_normalized_ratiometric_data_list[self.num].append(normalized_ratio)
         global_kdm_list[self.num].append(kdm)
@@ -3911,11 +3911,13 @@ class DataNormalization():
         frequency: int = global_frequency_list[count]
         offset: float
         if frequency == global_high_low_dictionary[HighLow.LOW]:
-            match global_x_axis_mode:
-                case PlotTimeReportingMode.EXPERIMENT_TIME:
-                    offset = sample*global_low_frequency_slope + global_low_frequency_offset
-                case PlotTimeReportingMode.FILE_NUMBER:
-                    offset = file*global_low_frequency_slope + global_low_frequency_offset
+            offset = calculate_low_frequency_offset(
+                global_x_axis_mode,
+                sample,
+                file,
+                global_low_frequency_slope,
+                global_low_frequency_offset,
+            )
         else:
             offset = 0
         normalization_index: int = global_normalization_point - 1
@@ -3995,13 +3997,13 @@ class DataNormalization():
                             ##########################
                             sample = global_sample_list[index]
                             file = global_file_list[index]
-                            match global_x_axis_mode:
-                                case PlotTimeReportingMode.EXPERIMENT_TIME:
-                                    offset = sample*global_low_frequency_slope\
-                                            + global_low_frequency_offset
-                                case PlotTimeReportingMode.FILE_NUMBER:
-                                    offset = file*global_low_frequency_slope\
-                                            + global_low_frequency_offset
+                            offset = calculate_low_frequency_offset(
+                                global_x_axis_mode,
+                                sample,
+                                file,
+                                global_low_frequency_slope,
+                                global_low_frequency_offset,
+                            )
                             global_offset_normalized_data_list[num][index] =\
                                   global_normalized_data_list[num][count][index] + offset
             ################################################
@@ -4045,13 +4047,13 @@ class DataNormalization():
                             ##########################
                             sample = global_sample_list[index]
                             file = index + 1
-                            match global_x_axis_mode:
-                                case PlotTimeReportingMode.EXPERIMENT_TIME:
-                                    offset = sample*global_low_frequency_slope\
-                                            + global_low_frequency_offset
-                                case PlotTimeReportingMode.FILE_NUMBER:
-                                    offset = file*global_low_frequency_slope\
-                                            + global_low_frequency_offset
+                            offset = calculate_low_frequency_offset(
+                                global_x_axis_mode,
+                                sample,
+                                file,
+                                global_low_frequency_slope,
+                                global_low_frequency_offset,
+                            )
                             global_offset_normalized_data_list[num][index] =\
                                   global_normalized_data_list[num][count][index] + offset
             ################################################
@@ -4086,13 +4088,13 @@ class DataNormalization():
                     sample = global_sample_list[index]
                     file = global_file_list[index]
                     offset: float
-                    match global_x_axis_mode:
-                        case PlotTimeReportingMode.EXPERIMENT_TIME:
-                            offset = sample*global_low_frequency_slope\
-                                    + global_low_frequency_offset
-                        case PlotTimeReportingMode.FILE_NUMBER:
-                            offset = file*global_low_frequency_slope\
-                                    + global_low_frequency_offset
+                    offset = calculate_low_frequency_offset(
+                        global_x_axis_mode,
+                        sample,
+                        file,
+                        global_low_frequency_slope,
+                        global_low_frequency_offset,
+                    )
                     for num in range(global_electrode_count):
                         global_offset_normalized_data_list[num][index] =\
                               global_normalized_data_list[num][count][index] + offset
@@ -4107,15 +4109,10 @@ class DataNormalization():
                 high_count: int = global_frequency_dict[global_high_frequency]
                 high_point: float = global_normalized_data_list[num][high_count][index]
                 low_point: float = global_offset_normalized_data_list[num][index]
-                normalized_data_ratio: float = high_point/low_point
+                normalized_data_ratio: float = calculate_normalized_ratio(high_point, low_point)
                 global_normalized_ratiometric_data_list[num][index] = normalized_data_ratio
                 #-- KDM ---#
-                match global_kdm_method:
-                    case KDMMethod.OLD:
-                        kdm: float = (high_point - low_point) + 1
-                    case KDMMethod.NEW:
-                        average: float = 0.5*(high_point + low_point)
-                        kdm: float = (high_point - low_point)/average + 1
+                kdm: float = calculate_kdm(high_point, low_point, global_kdm_method)
                 global_kdm_list[num][index] = kdm
         #-- if .txt file export has been activated, update the exported data ---#
         if global_text_file_export_activated:
@@ -4325,13 +4322,13 @@ class PostAnalysis(ttk.Frame):
                             ##########################
                             sample = global_sample_list[index]
                             file = global_file_list[index]
-                            match global_x_axis_mode:
-                                case PlotTimeReportingMode.EXPERIMENT_TIME:
-                                    offset = (sample*global_low_frequency_slope)\
-                                            + global_low_frequency_offset
-                                case PlotTimeReportingMode.FILE_NUMBER:
-                                    offset = (file*global_low_frequency_slope)\
-                                            + global_low_frequency_offset
+                            offset = calculate_low_frequency_offset(
+                                global_x_axis_mode,
+                                sample,
+                                file,
+                                global_low_frequency_slope,
+                                global_low_frequency_offset,
+                            )
                             global_offset_normalized_data_list[num][index] =\
                                 global_normalized_data_list[num][count][index] + offset
         global_data_normalization.reset_ratiometric_data()
