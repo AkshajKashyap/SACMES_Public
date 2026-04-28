@@ -5,3 +5,7 @@ generated_exports/
 # keep baseline captures ignored, but allow manifest
 baseline/*
 !baseline/manifest.json
+
+# keep baseline captures ignored, but allow manifest
+baseline/*
+!baseline/manifest.json

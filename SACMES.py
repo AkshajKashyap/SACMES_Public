@@ -47,6 +47,13 @@ if os.environ.get("SACMES_HEADLESS") == "1":
 else:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import casadi as ca
+from data_io import (
+    column_index_for_current,
+    file_is_complete,
+    make_file_name,
+    read_data,
+    set_runtime_module as set_data_io_runtime_module,
+)
 from export_text import TextFileExport, set_runtime_module as set_text_export_runtime_module
 from sacmes_shared import (
     AnalysisMethod,
@@ -63,6 +70,7 @@ from sacmes_shared import (
 )
 
 plt.style.use("ggplot")
+set_data_io_runtime_module(sys.modules[__name__])
 set_text_export_runtime_module(sys.modules[__name__])
 #---Clear mac terminal memory---# #TODO: what problem does this solve? is it portable?
 #os.system("clear && printf '\e[3J'")
@@ -176,51 +184,6 @@ def internal_error(internal_error_message: str) -> NoReturn:
     print("internal_error:", internal_error_message)
     sys.exit(1)
 
-def file_is_complete(filename: str) -> bool:
-    """Heuristic test if the file is complete in the sense
-    that the data acquisition software is no longer writing
-    the file. In the original SACMES code, this heuristic was
-    based on file length, which is not reliable; indeed it is
-    wrong in the normal mode of operation.
-    In the new implementation, one we know the file exists
-    we check if it is open by any running process. If not,
-    we consider that it is complete."""
-    #return os.path.exists(filename) and os.path.getsize(filename) > global_byte_limit
-    #return True
-    #Trying a new method since psutil.process_iter() takes a long time.
-    if os.path.exists(filename):
-        match os.name:
-            case 'posix': # Linux/MacOS
-                try:
-                    with open(filename, 'r+') as f:
-                        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)  # Try locking the file
-                        fcntl.flock(f, fcntl.LOCK_UN)  # Unlock immediately
-                    return True  # Locking succeeded, file is not in use
-                except IOError:
-                    return False # File is locked, wait and retry\
-            case 'nt': # Windows
-                try:
-                    with open(filename, 'r+') as f:
-                        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)  # Try locking the file
-                        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)  # Unlock immediately
-                    return True  # Locking succeeded, file is not in use
-                except OSError:
-                    return False # File is locked, wait and retry\
-        # for proc in psutil.process_iter():
-        #     print("STILL SEARCHING PROCESSES")
-        #     try:
-        #         for file in proc.open_files():
-        #             if file.path == filename:
-        #                 #print(f"{filename} open by {proc.pid}")
-        #                 return False
-        #     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-        #         pass
-        # #print(f"{filename} assumed not open; length={os.path.getsize(filename)}")
-        # return True
-    else:
-        #print(f"{filename} does not exist")
-        return False
-
 def get_time(file_index: int) -> float:
     if file_index == 0:
         file_index = 1
@@ -228,77 +191,6 @@ def get_time(file_index: int) -> float:
     file_1 = global_file_path + make_file_name(1,1,global_low_frequency)
     exp_time = (os.path.getmtime(file_now) - os.path.getmtime(file_1))/3600 # in hours
     return exp_time
-
-def make_file_name(file_index: int, electrode: int, frequency: int) -> str:
-    """Instantiate the file name pattern with the given values."""
-    name: str = global_file_name_pattern
-    match global_electrodes_mode:
-        case ElectrodesMode.SINGLE:
-            name = name.replace("<H>", global_handle_variable)
-            name = name.replace("<E>", "1")
-            name = name.replace("<F>", str(frequency))
-            name = name.replace("<N>", str(file_index))
-        case ElectrodesMode.MULTIPLE:
-            name = name.replace("<H>", global_handle_variable)
-            name = name.replace("<E>", str(electrode))
-            name = name.replace("<F>", str(frequency))
-            name = name.replace("<N>", str(file_index))
-    return name
-
-def read_data(input_file_name: str, electrode: int) ->\
-    Tuple[List[float], List[float], Dict[float, float]]:
-    """Extract numerical data for potentials and currents
-    from an instrument-produced data file,
-    and return them as a tuple
-    (potentials, currents, potential_to_current_map).
-    """
-    potentials: List[float]
-    currents: List[float]
-    potential_to_current_map: Dict[float, float]
-    try:
-        with open(input_file_name, "r", encoding=str(global_file_encoding)) as mydata:
-            potentials = []
-            currents = []
-            potential_to_current_map = {}
-            for line in mydata:
-                check_split_list = line.split(str(global_delimiter))
-                while check_split_list[0] == " " or check_split_list[0] == "\t":
-                    del check_split_list[0]
-                check_split_first_item: str = check_split_list[0].replace(",", "")
-                first_item_is_float: bool
-                try:
-                    float(check_split_first_item)
-                    first_item_is_float = True
-                except ValueError:
-                    first_item_is_float = False
-                if first_item_is_float:
-                    current_value: float =\
-                        1000000 * float(check_split_list[column_index_for_current(electrode)].\
-                                        replace(",", ""))
-                    currents.append(current_value)
-                    potential_value: float =\
-                        float(line.split(str(global_delimiter))[global_voltage_column_index].\
-                              strip(","))
-                    potentials.append(potential_value)
-                    potential_to_current_map[potential_value] = current_value
-        return potentials, currents, potential_to_current_map
-    except FileNotFoundError as exception:
-        internal_error("read_data: file not found " + str(exception))
-
-#######################################
-### Retrieve the column index value ###
-#######################################
-def column_index_for_current(electrode: int) -> int:
-    """Depending on the type of instrument output file
-    (single file for all electrodes, or multiple files),
-    guess the column with the data for the given electrode.
-    """
-    match global_electrodes_mode:
-        case ElectrodesMode.SINGLE:
-            return global_base_column_index_for_currents +\
-                  (electrode-1)*global_columns_per_electrode
-        case ElectrodesMode.MULTIPLE:
-            return global_base_column_index_for_currents
 
 def _update_global_lists(file: int):
     """Record the file number and sample rate in global lists."""
