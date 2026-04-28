@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 match os.name:
     case 'posix': # Linux/MacOS
@@ -11,21 +12,19 @@ match os.name:
     case 'nt': # Windows
         import msvcrt
 
-from sacmes_shared import ElectrodesMode
+from sacmes_shared import Delimiter, ElectrodesMode, FileEncoding
 
 
-_RUNTIME_MODULE: Any = None
-
-
-def set_runtime_module(module: Any) -> None:
-    global _RUNTIME_MODULE
-    _RUNTIME_MODULE = module
-
-
-def _runtime() -> Any:
-    if _RUNTIME_MODULE is None:
-        raise RuntimeError("Data IO runtime module has not been configured.")
-    return _RUNTIME_MODULE
+@dataclass(frozen=True)
+class DataIOConfig:
+    file_name_pattern: str
+    electrodes_mode: ElectrodesMode
+    handle_variable: str
+    file_encoding: FileEncoding
+    delimiter: Delimiter
+    voltage_column_index: int
+    base_column_index_for_currents: int
+    columns_per_electrode: int
 
 
 def file_is_complete(filename: str) -> bool:
@@ -74,42 +73,40 @@ def file_is_complete(filename: str) -> bool:
         return False
 
 
-def make_file_name(file_index: int, electrode: int, frequency: int) -> str:
+def make_file_name(config: DataIOConfig, file_index: int, electrode: int, frequency: int) -> str:
     """Instantiate the file name pattern with the given values."""
-    runtime = _runtime()
-    name: str = runtime.global_file_name_pattern
-    match runtime.global_electrodes_mode:
+    name: str = config.file_name_pattern
+    match config.electrodes_mode:
         case ElectrodesMode.SINGLE:
-            name = name.replace("<H>", runtime.global_handle_variable)
+            name = name.replace("<H>", config.handle_variable)
             name = name.replace("<E>", "1")
             name = name.replace("<F>", str(frequency))
             name = name.replace("<N>", str(file_index))
         case ElectrodesMode.MULTIPLE:
-            name = name.replace("<H>", runtime.global_handle_variable)
+            name = name.replace("<H>", config.handle_variable)
             name = name.replace("<E>", str(electrode))
             name = name.replace("<F>", str(frequency))
             name = name.replace("<N>", str(file_index))
     return name
 
 
-def read_data(input_file_name: str, electrode: int) ->\
+def read_data(config: DataIOConfig, input_file_name: str, electrode: int) ->\
     Tuple[List[float], List[float], Dict[float, float]]:
     """Extract numerical data for potentials and currents
     from an instrument-produced data file,
     and return them as a tuple
     (potentials, currents, potential_to_current_map).
     """
-    runtime = _runtime()
     potentials: List[float]
     currents: List[float]
     potential_to_current_map: Dict[float, float]
     try:
-        with open(input_file_name, "r", encoding=str(runtime.global_file_encoding)) as mydata:
+        with open(input_file_name, "r", encoding=str(config.file_encoding)) as mydata:
             potentials = []
             currents = []
             potential_to_current_map = {}
             for line in mydata:
-                check_split_list = line.split(str(runtime.global_delimiter))
+                check_split_list = line.split(str(config.delimiter))
                 while check_split_list[0] == " " or check_split_list[0] == "\t":
                     del check_split_list[0]
                 check_split_first_item: str = check_split_list[0].replace(",", "")
@@ -121,31 +118,30 @@ def read_data(input_file_name: str, electrode: int) ->\
                     first_item_is_float = False
                 if first_item_is_float:
                     current_value: float =\
-                        1000000 * float(check_split_list[column_index_for_current(electrode)].\
+                        1000000 * float(check_split_list[column_index_for_current(config, electrode)].\
                                         replace(",", ""))
                     currents.append(current_value)
                     potential_value: float =\
-                        float(line.split(str(runtime.global_delimiter))[runtime.global_voltage_column_index].\
+                        float(line.split(str(config.delimiter))[config.voltage_column_index].\
                               strip(","))
                     potentials.append(potential_value)
                     potential_to_current_map[potential_value] = current_value
         return potentials, currents, potential_to_current_map
     except FileNotFoundError as exception:
-        runtime.internal_error("read_data: file not found " + str(exception))
+        raise FileNotFoundError("read_data: file not found " + str(exception)) from exception
 
 
 #######################################
 ### Retrieve the column index value ###
 #######################################
-def column_index_for_current(electrode: int) -> int:
+def column_index_for_current(config: DataIOConfig, electrode: int) -> int:
     """Depending on the type of instrument output file
     (single file for all electrodes, or multiple files),
     guess the column with the data for the given electrode.
     """
-    runtime = _runtime()
-    match runtime.global_electrodes_mode:
+    match config.electrodes_mode:
         case ElectrodesMode.SINGLE:
-            return runtime.global_base_column_index_for_currents +\
-                  (electrode-1)*runtime.global_columns_per_electrode
+            return config.base_column_index_for_currents +\
+                  (electrode-1)*config.columns_per_electrode
         case ElectrodesMode.MULTIPLE:
-            return runtime.global_base_column_index_for_currents
+            return config.base_column_index_for_currents

@@ -48,11 +48,11 @@ else:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import casadi as ca
 from data_io import (
-    column_index_for_current,
+    DataIOConfig,
+    column_index_for_current as data_io_column_index_for_current,
     file_is_complete,
-    make_file_name,
-    read_data,
-    set_runtime_module as set_data_io_runtime_module,
+    make_file_name as data_io_make_file_name,
+    read_data as data_io_read_data,
 )
 from export_text import TextFileExport, set_runtime_module as set_text_export_runtime_module
 from sacmes_shared import (
@@ -70,7 +70,6 @@ from sacmes_shared import (
 )
 
 plt.style.use("ggplot")
-set_data_io_runtime_module(sys.modules[__name__])
 set_text_export_runtime_module(sys.modules[__name__])
 #---Clear mac terminal memory---# #TODO: what problem does this solve? is it portable?
 #os.system("clear && printf '\e[3J'")
@@ -183,6 +182,31 @@ def internal_error(internal_error_message: str) -> NoReturn:
     """
     print("internal_error:", internal_error_message)
     sys.exit(1)
+
+def _data_io_config() -> DataIOConfig:
+    return DataIOConfig(
+        file_name_pattern=global_file_name_pattern,
+        electrodes_mode=global_electrodes_mode,
+        handle_variable=global_handle_variable,
+        file_encoding=global_file_encoding,
+        delimiter=global_delimiter,
+        voltage_column_index=global_voltage_column_index,
+        base_column_index_for_currents=global_base_column_index_for_currents,
+        columns_per_electrode=global_columns_per_electrode,
+    )
+
+def make_file_name(file_index: int, electrode: int, frequency: int) -> str:
+    return data_io_make_file_name(_data_io_config(), file_index, electrode, frequency)
+
+def read_data(input_file_name: str, electrode: int) ->\
+    Tuple[List[float], List[float], Dict[float, float]]:
+    try:
+        return data_io_read_data(_data_io_config(), input_file_name, electrode)
+    except FileNotFoundError as exception:
+        internal_error(str(exception))
+
+def column_index_for_current(electrode: int) -> int:
+    return data_io_column_index_for_current(_data_io_config(), electrode)
 
 def get_time(file_index: int) -> float:
     if file_index == 0:
