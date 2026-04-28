@@ -27,7 +27,6 @@ import csv
 from math import sqrt
 from threading import Thread
 from queue import Queue, Empty
-from enum import Enum
 import warnings
 import psutil
 import numpy as np
@@ -49,7 +48,19 @@ else:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import casadi as ca
 from export_text import TextFileExport, set_runtime_module as set_text_export_runtime_module
-from sacmes_shared import AnalysisMethod, HighLow, PeakMethod, PlotSummaryMode
+from sacmes_shared import (
+    AnalysisMethod,
+    Delimiter,
+    ElectrodesMode,
+    FileEncoding,
+    HighLow,
+    KDMMethod,
+    PeakMethod,
+    PlotSummaryMode,
+    PlotTimeReportingMode,
+    XBound,
+    YBound,
+)
 
 plt.style.use("ggplot")
 set_text_export_runtime_module(sys.modules[__name__])
@@ -64,20 +75,8 @@ warnings.filterwarnings(action="ignore", module="scipy", message="^internal gels
                                     # class declarations and before the main program body)
                                     ########################
 global_handle_variable: str = "" #file name prefix for input data files
-class ElectrodesMode(Enum):
-    SINGLE = 0
-    MULTIPLE = 1
 global_electrodes_mode: ElectrodesMode = ElectrodesMode.SINGLE
 global_plot_summary_mode: PlotSummaryMode = PlotSummaryMode.PHE
-class PlotTimeReportingMode(Enum):
-    EXPERIMENT_TIME = 0
-    FILE_NUMBER = 1
-    def __str__(self) -> str:
-        match self:
-            case PlotTimeReportingMode.EXPERIMENT_TIME:
-                return "Experiment Time"
-            case PlotTimeReportingMode.FILE_NUMBER:
-                return "File Number"
 STARTING_FILE_NUMBER: int = 1
 DEFAULT_NORMALIZATION_FILE_NUMBER: int = 1
 # frequencies initially displayed in Frequency Listbox
@@ -155,16 +154,10 @@ LARGE_FONT = ("Verdana", 12)
 MEDIUM_FONT = ("Verdana", 10)
 SMALL_FONT = ("Verdana", 8)
 global_file_path: str = "" #path to the directory containing the input data files
-class XBound(Enum):
-    START_PLUS = 1
-    NOW_MINUS = 2
 global_x_left_bound_radiobutton: XBound = XBound.START_PLUS
 global_x_right_bound_radiobutton: XBound = XBound.NOW_MINUS
 global_x_left_bound_offset: float = 0
 global_x_right_bound_offset: float = 0
-class YBound(Enum):
-    AUTOMATIC = 1
-    MANUAL = 2
 global_y_norm_radiobutton: YBound = YBound.AUTOMATIC
 global_y_kdm_radiobutton: YBound = YBound.AUTOMATIC
 FRAME_POST_ANALYSIS: str = "PostAnalysis"
@@ -172,28 +165,7 @@ FRAME_LOW_PARAMETER: str = "LowParameter"
 FRAME_HIGH_PARAMETER: str = "HighParameter"
 FRAME_INPUT: str = "InputFrame"
 EPSILON: float = 0.0000001
-class Delimiter(Enum):
-    SPACE = 1
-    TAB = 2
-    COMMA = 3
-    def __str__(self) -> str:
-        match self:
-            case Delimiter.SPACE:
-                return " "
-            case Delimiter.TAB:
-                return "\t"
-            case Delimiter.COMMA:
-                return ","
 global_delimiter: Delimiter = Delimiter.SPACE
-class FileEncoding(Enum):
-    UTF_8 = 1
-    UTF_16 = 2
-    def __str__(self) -> str:
-        match self:
-            case FileEncoding.UTF_8:
-                return "UTF-8"
-            case FileEncoding.UTF_16:
-                return "UTF-16"
 global_file_encoding: FileEncoding = FileEncoding.UTF_8
                         ########################
                         ### Global Functions ###
@@ -4785,16 +4757,6 @@ class Track():
             self.track_list[index] = 1
         else:
             self.track_list[index] += 1
-#--------------------------------------------------------------------------------------- #
-class KDMMethod (Enum):
-    OLD = 0
-    NEW = 1
-    def __str__(self) -> str:
-        match self:
-            case KDMMethod.OLD:
-                return "Old KDM"
-            case KDMMethod.NEW:
-                return "New KDM"
 global_analysis_method: AnalysisMethod = AnalysisMethod.CONTINUOUS_SCAN
 global_kdm_method: KDMMethod = KDMMethod.OLD
 global_peak_method: PeakMethod = PeakMethod.POLY
