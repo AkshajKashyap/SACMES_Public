@@ -210,7 +210,9 @@ def _initialize_headless_storage(sacmes: Any) -> None:
     sacmes.global_wait_time = sacmes.WaitTime()
     sacmes.global_track = sacmes.Track()
     sacmes.global_data_normalization = sacmes.DataNormalization()
-    sacmes.global_text_file_export = sacmes.TextFileExport().initialize()
+    sacmes.global_text_file_export = sacmes.TextFileExport().initialize(
+        snapshot=sacmes.text_export_snapshot()
+    )
 
 
 def _new_worker(sacmes: Any, electrode: int):

@@ -54,7 +54,7 @@ from data_io import (
     make_file_name as data_io_make_file_name,
     read_data as data_io_read_data,
 )
-from export_text import TextFileExport, set_runtime_module as set_text_export_runtime_module
+from export_text import ExportSnapshot, TextFileExport, set_runtime_module as set_text_export_runtime_module
 from normalization_math import (
     calculate_kdm,
     calculate_low_frequency_offset,
@@ -212,6 +212,35 @@ def read_data(input_file_name: str, electrode: int) ->\
 
 def column_index_for_current(electrode: int) -> int:
     return data_io_column_index_for_current(_data_io_config(), electrode)
+
+def text_export_snapshot(electrodes: Optional[List[int]] = None,\
+                         frequencies: Optional[List[int]] = None) -> ExportSnapshot:
+    electrode_list = global_electrode_list if electrodes is None else electrodes
+    frequency_list = global_frequency_list if frequencies is None else frequencies
+    return ExportSnapshot(
+        export_file_path=global_export_file_path,
+        analysis_method=global_analysis_method,
+        plot_summary_mode=global_plot_summary_mode,
+        peak_method=global_peak_method,
+        electrode_list=electrode_list,
+        electrode_count=len(electrode_list),
+        frequency_list=frequency_list,
+        global_electrode_count=global_electrode_count,
+        global_frequency_list=global_frequency_list,
+        frequency_dict=global_frequency_dict,
+        frame_list=globals().get("global_frame_list", []),
+        sample_list=globals().get("global_sample_list", []),
+        data_list=globals().get("global_data_list", []),
+        peak_list=globals().get("global_peak_list", []),
+        high_low_dictionary=global_high_low_dictionary,
+        normalized_data_list=globals().get("global_normalized_data_list", []),
+        offset_normalized_data_list=globals().get("global_offset_normalized_data_list", []),
+        normalized_ratiometric_data_list=globals().get(
+            "global_normalized_ratiometric_data_list",
+            [],
+        ),
+        kdm_list=globals().get("global_kdm_list", []),
+    )
 
 def get_time(file_index: int) -> float:
     if file_index == 0:
@@ -2494,7 +2523,7 @@ class InitializeContinuousCanvas():
         #--- If the user has indicated that text file export should be activated ---#
         if global_text_file_export_activated:
             print("Initializing Text File Export")
-            global_text_file_export = TextFileExport().initialize()
+            global_text_file_export = TextFileExport().initialize(snapshot=text_export_snapshot())
 
     def make_figure(self,\
                 electrode: int)\
@@ -2862,7 +2891,7 @@ class InitializeFrequencyMapCanvas():
         #################################
         #--- If the user has indicated that text file export should be activated ---#
         if global_text_file_export_activated:
-            global_text_file_export = TextFileExport().initialize()
+            global_text_file_export = TextFileExport().initialize(snapshot=text_export_snapshot())
         #declarations for fields that will be initialized in other methods
         self.list_val: int
 
@@ -4652,7 +4681,7 @@ class Track():
                     _update_global_lists(file)
                     global_data_normalization.renormalize_data(file)
                     if global_text_file_export_activated:
-                        global_text_file_export.continuous_scan_export(file)
+                        global_text_file_export.continuous_scan_export(file, text_export_snapshot())
                     #--- if the high and low frequencies have been changed, adjust the data ---#
                     if global_ratiometric_check:
                         global_data_normalization.reset_ratiometric_data()
@@ -4666,7 +4695,11 @@ class Track():
                             if frequency is None:
                                 internal_error("tracking: frequency is None")
                             else:
-                                global_text_file_export.frequency_map_export(file, frequency)
+                                global_text_file_export.frequency_map_export(
+                                    file,
+                                    frequency,
+                                    text_export_snapshot(),
+                                )
             self.track_list[index] = 1
         else:
             self.track_list[index] += 1

@@ -27,6 +27,7 @@ def _runtime() -> Any:
 
 @dataclass(frozen=True)
 class ExportSnapshot:
+    export_file_path: str
     analysis_method: AnalysisMethod
     plot_summary_mode: PlotSummaryMode
     peak_method: PeakMethod
@@ -35,6 +36,7 @@ class ExportSnapshot:
     frequency_list: List[int]
     global_electrode_count: int
     global_frequency_list: List[int]
+    frequency_dict: Dict[int, int]
     frame_list: List[str]
     sample_list: List[float]
     data_list: Any
@@ -213,46 +215,17 @@ class TextFileExport():
         self.frequency_list: List[int]
         self.text_file_handle: str
 
-    def _export_snapshot(self, runtime: Any) -> ExportSnapshot:
-        return ExportSnapshot(
-            analysis_method=runtime.global_analysis_method,
-            plot_summary_mode=runtime.global_plot_summary_mode,
-            peak_method=runtime.global_peak_method,
-            electrode_list=self.electrode_list,
-            electrode_count=self.electrode_count,
-            frequency_list=self.frequency_list,
-            global_electrode_count=runtime.global_electrode_count,
-            global_frequency_list=runtime.global_frequency_list,
-            frame_list=getattr(runtime, "global_frame_list", []),
-            sample_list=getattr(runtime, "global_sample_list", []),
-            data_list=getattr(runtime, "global_data_list", []),
-            peak_list=getattr(runtime, "global_peak_list", []),
-            high_low_dictionary=getattr(runtime, "global_high_low_dictionary", {}),
-            normalized_data_list=getattr(runtime, "global_normalized_data_list", []),
-            offset_normalized_data_list=getattr(runtime, "global_offset_normalized_data_list", []),
-            normalized_ratiometric_data_list=getattr(
-                runtime,
-                "global_normalized_ratiometric_data_list",
-                [],
-            ),
-            kdm_list=getattr(runtime, "global_kdm_list", []),
-        )
-
     def initialize(self,\
                  electrodes: Optional[List[int]] = None,\
-                 frequencies: Optional[List[int]] = None):
-        runtime = _runtime()
-        if electrodes is None:
-            self.electrode_list = runtime.global_electrode_list
-        else:
-            self.electrode_list = electrodes
+                 frequencies: Optional[List[int]] = None,
+                 snapshot: Optional[ExportSnapshot] = None):
+        if snapshot is None:
+            snapshot = _runtime().text_export_snapshot(electrodes=electrodes,\
+                                                       frequencies=frequencies)
+        self.electrode_list = snapshot.electrode_list
         self.electrode_count = len(self.electrode_list)
-        if frequencies is None:
-            self.frequency_list = runtime.global_frequency_list
-        else:
-            self.frequency_list = frequencies
-        self.text_file_handle = runtime.global_export_file_path
-        snapshot = self._export_snapshot(runtime)
+        self.frequency_list = snapshot.frequency_list
+        self.text_file_handle = snapshot.export_file_path
         match snapshot.analysis_method:
             case AnalysisMethod.CONTINUOUS_SCAN:
                 peak_method_row = _build_continuous_scan_peak_method_row(snapshot)
@@ -271,10 +244,9 @@ class TextFileExport():
                     writer.writerow(txt_list)
         return self
 
-    def continuous_scan_export(self, file: int) -> None:
+    def continuous_scan_export(self, file: int, snapshot: ExportSnapshot) -> None:
         """Export the data from the current file."""
-        runtime = _runtime()
-        output_list = _build_continuous_scan_export_row(self._export_snapshot(runtime), file)
+        output_list = _build_continuous_scan_export_row(snapshot, file)
         #--- Write the data into the .txt file ---#
         with open(self.text_file_handle, "a", encoding="utf-8", newline="") as text_io_wrapper:
             writer = csv.writer(text_io_wrapper, delimiter=" ")
@@ -289,45 +261,44 @@ class TextFileExport():
         with open(self.text_file_handle, "w", encoding="utf-8", newline="") as output:
             output.write(filedata)
 
-    def frequency_map_export(self, file: int, frequency: int) -> None:
+    def frequency_map_export(self, file: int, frequency: int, snapshot: ExportSnapshot) -> None:
         """Export the data from the current file."""
-        runtime = _runtime()
         output_list: List[str] = []
         index: int = file - 1
         running_sum: float
         average: float
         try:
             output_list.append(str(frequency))
-            count = runtime.global_frequency_dict[frequency]
+            count = snapshot.frequency_dict[frequency]
             # Peak Height / AUC
-            for num in range(runtime.global_electrode_count):
-                output_list.append(str(runtime.global_data_list[num][count][index]))
-                output_list.append(str(runtime.global_data_list[num][count][index]/frequency))
+            for num in range(snapshot.global_electrode_count):
+                output_list.append(str(snapshot.data_list[num][count][index]))
+                output_list.append(str(snapshot.data_list[num][count][index]/frequency))
             # Average Peak Height / AUC
             if self.electrode_count > 1:
                 running_sum = 0
-                for num in range(runtime.global_electrode_count):
-                    running_sum += runtime.global_data_list[num][count][index]
-                average = running_sum/runtime.global_electrode_count
+                for num in range(snapshot.global_electrode_count):
+                    running_sum += snapshot.data_list[num][count][index]
+                average = running_sum/snapshot.global_electrode_count
                 output_list.append(str(average))
                 # Standard Deviation of a Sample across all electrodes
                 # for Peak Height/AUC
                 std_list: List[float] = []
-                for num in range(runtime.global_electrode_count):
-                    std_list.append(runtime.global_data_list[num][count][index])
+                for num in range(snapshot.global_electrode_count):
+                    std_list.append(snapshot.data_list[num][count][index])
                 std_list = [(value - average)**2 for value in std_list]
-                standard_deviation = sqrt(sum(std_list)/(runtime.global_electrode_count - 1))
+                standard_deviation = sqrt(sum(std_list)/(snapshot.global_electrode_count - 1))
                 output_list.append(str(standard_deviation))
                 #-- Average Charge --#
                 avg_charge = average/frequency
                 output_list.append(str(avg_charge))
                 #-- Charge STD --#
                 std_list = []
-                for num in range(runtime.global_electrode_count):
-                    std_list.append(runtime.global_data_list[num][count][index])
+                for num in range(snapshot.global_electrode_count):
+                    std_list.append(snapshot.data_list[num][count][index])
                 std_list = [x/frequency for x in std_list]
                 std_list = [(value - avg_charge)**2 for value in std_list]
-                charge_standard_deviation = sqrt(sum(std_list)/(runtime.global_electrode_count - 1))
+                charge_standard_deviation = sqrt(sum(std_list)/(snapshot.global_electrode_count - 1))
                 output_list.append(str(charge_standard_deviation))
             #--- Write the data into the .txt file ---#
             with open(self.text_file_handle, "a", encoding="utf-8", newline="") as output:
