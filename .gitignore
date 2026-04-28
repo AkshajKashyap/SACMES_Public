@@ -1,0 +1,7 @@
+# Local baseline harness artifacts
+baseline/
+generated_exports/
+
+# keep baseline captures ignored, but allow manifest
+baseline/*
+!baseline/manifest.json
