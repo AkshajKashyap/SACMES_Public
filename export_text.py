@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 import time
 from math import sqrt
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from sacmes_shared import AnalysisMethod, HighLow, PeakMethod, PlotSummaryMode
 
@@ -24,6 +25,183 @@ def _runtime() -> Any:
     return _RUNTIME_MODULE
 
 
+@dataclass(frozen=True)
+class ExportSnapshot:
+    analysis_method: AnalysisMethod
+    plot_summary_mode: PlotSummaryMode
+    peak_method: PeakMethod
+    electrode_list: List[int]
+    electrode_count: int
+    frequency_list: List[int]
+    global_electrode_count: int
+    global_frequency_list: List[int]
+    frame_list: List[str]
+    sample_list: List[float]
+    data_list: Any
+    peak_list: Any
+    high_low_dictionary: Dict[HighLow, int]
+    normalized_data_list: Any
+    offset_normalized_data_list: Any
+    normalized_ratiometric_data_list: Any
+    kdm_list: Any
+
+
+def _build_continuous_scan_peak_method_row(snapshot: ExportSnapshot) -> Optional[List[str]]:
+    match snapshot.plot_summary_mode:
+        case PlotSummaryMode.PHE:
+            txt_list: List[str] = []
+            match snapshot.peak_method:
+                case PeakMethod.POLY:
+                    txt_list.append("Peak Method: Poly Fit")
+                case PeakMethod.GAUSS:
+                    txt_list.append("Peak Method: Gauss")
+            return txt_list
+    return None
+
+
+def _build_continuous_scan_header_row(snapshot: ExportSnapshot) -> List[str]:
+    txt_list: List[str] = []
+    txt_list.append("File")
+    txt_list.append("Time(Hrs)")
+    for frequency in snapshot.frequency_list:
+        for electrode in snapshot.electrode_list:
+            match snapshot.plot_summary_mode:
+                case PlotSummaryMode.PHE:
+                    txt_list.append("PeakHeight_E%d_%dHz" % (electrode, frequency))
+                    match snapshot.peak_method:
+                        case PeakMethod.GAUSS:
+                            txt_list.append("PeakLocation_E%d_%dHz" % (electrode, frequency))
+                case PlotSummaryMode.AUC:
+                    txt_list.append("AUC_E%d_%dHz" % (electrode, frequency))
+    if snapshot.electrode_count > 1:
+        for frequency in snapshot.frequency_list:
+            match snapshot.plot_summary_mode:
+                case PlotSummaryMode.PHE:
+                    txt_list.append("Avg_PeakHeight_%dHz" % frequency)
+                case PlotSummaryMode.AUC:
+                    txt_list.append("Avg_AUC_%dHz" % frequency)
+    for frequency in snapshot.frequency_list:
+        for electrode in snapshot.electrode_list:
+            txt_list.append(f"Norm_E{electrode}_{frequency}Hz")
+    if snapshot.electrode_count > 1:
+        for frequency in snapshot.frequency_list:
+            txt_list.append(f"Average_Norm_{frequency}Hz")
+        for frequency in snapshot.frequency_list:
+            txt_list.append(f"SD_Norm_{frequency}Hz")
+    if len(snapshot.frequency_list) > 1:
+        for electrode in snapshot.electrode_list:
+            txt_list.append(f"NormalizedRatio_E{electrode}")
+        if snapshot.electrode_count > 1:
+            txt_list.append("NormalizedRatioAvg")
+            txt_list.append("NormalizedRatioSTD")
+        for electrode in snapshot.electrode_list:
+            txt_list.append(f"KDM_E{electrode}")
+        if snapshot.electrode_count > 1:
+            txt_list.append("AvgKDM")
+            txt_list.append("KDM_STD")
+    return txt_list
+
+
+def _build_frequency_map_header_row(snapshot: ExportSnapshot) -> List[str]:
+    txt_list = []
+    txt_list.append("Frequency(Hz)")
+    e_count = 1
+    for _ in snapshot.frame_list:
+        match snapshot.plot_summary_mode:
+            case PlotSummaryMode.PHE:
+                txt_list.append(f"PeakHeight_E{e_count}(µA)")
+            case PlotSummaryMode.AUC:
+                txt_list.append(f"AUC_E{e_count}")
+        txt_list.append(f"Charge_E{e_count}(µC)")
+        e_count += 1
+    if snapshot.electrode_count > 1:
+        txt_list.append("Avg.PeakHeight(µA)")
+        txt_list.append("Standard_Deviation(µA)")
+        txt_list.append("Avg.Charge(µC)")
+        txt_list.append("Standard_Deviation(µC)")
+    return txt_list
+
+
+def _build_continuous_scan_export_row(snapshot: ExportSnapshot, file: int) -> List[str]:
+    normalized_frequency_currents: List[float]
+    norm_list: List[float]
+    kdm_list: List[float]
+    running_sum: float
+    average: float
+    average_norm: float
+    index: int = file - 1
+    output_list: List[str] = []
+    output_list.append(str(file))
+    output_list.append(str(snapshot.sample_list[index]))
+    #--- Peak Height ---#
+    for count in range(len(snapshot.global_frequency_list)):
+        for num in range(snapshot.global_electrode_count):
+            output_list.append(str(snapshot.data_list[num][count][index]))
+            match snapshot.peak_method:
+                case PeakMethod.GAUSS:
+                    output_list.append(str(snapshot.peak_list[num][count][index]))
+    #--- Avg. Peak Height ---#
+    if snapshot.electrode_count > 1:
+        for count in range(len(snapshot.global_frequency_list)):
+            running_sum = 0
+            for num in range(snapshot.global_electrode_count):
+                running_sum += snapshot.data_list[num][count][index]
+            average = running_sum/snapshot.global_electrode_count
+            output_list.append(str(average))
+    #--- Peak Height/AUC Data Normalization ---#
+    for count in range(len(snapshot.global_frequency_list)):
+        for num in range(snapshot.global_electrode_count):
+            if snapshot.global_frequency_list[count] == snapshot.high_low_dictionary[HighLow.LOW]:
+                output_list.append(str(snapshot.offset_normalized_data_list[num][index]))
+            else:
+                output_list.append(str(snapshot.normalized_data_list[num][count][index]))
+    #--- Average normalized data across all electrodes for each frequency ---#
+    if snapshot.electrode_count > 1:
+        for count in range(len(snapshot.global_frequency_list)):
+            normalized_frequency_currents = []
+            for num in range(snapshot.global_electrode_count):
+                if snapshot.global_frequency_list[count] == snapshot.high_low_dictionary[HighLow.LOW]:
+                    normalized_frequency_currents.append(snapshot.offset_normalized_data_list[num][index])
+                else:
+                    normalized_frequency_currents.append(snapshot.normalized_data_list[num][count][index])
+            average_norm = sum(normalized_frequency_currents)/snapshot.global_electrode_count
+            output_list.append(str(average_norm))
+    #--- Standard Deviation ---#
+    if snapshot.electrode_count > 1:
+        for count in range(len(snapshot.global_frequency_list)):
+            normalized_frequency_currents = []
+            for num in range(snapshot.global_electrode_count):
+                normalized_frequency_currents.append(snapshot.normalized_data_list[num][count][index])
+            average_norm = sum(normalized_frequency_currents)/snapshot.global_electrode_count
+            std_list = [(x - average_norm)**2 for x in normalized_frequency_currents]
+            standard_deviation = float(sqrt(sum(std_list)/(snapshot.global_electrode_count - 1)))
+            output_list.append(str(standard_deviation))
+    if len(snapshot.global_frequency_list) > 1:
+        #--- Append Normalized Ratiometric Data ---#
+        norm_list = []
+        for num in range(snapshot.global_electrode_count):
+            output_list.append(str(snapshot.normalized_ratiometric_data_list[num][index]))
+            norm_list.append(snapshot.normalized_ratiometric_data_list[num][index])
+        if snapshot.electrode_count > 1:
+            norm_average: float = sum(norm_list)/snapshot.global_electrode_count
+            output_list.append(str(norm_average))
+            norm_std_list: List[float] = [(x - norm_average)**2 for x in norm_list]
+            norm_standard_deviation = sqrt(sum(norm_std_list)/(snapshot.global_electrode_count - 1))
+            output_list.append(str(norm_standard_deviation))
+        #--- Append KDM ---#
+        kdm_list = []
+        for num in range(snapshot.global_electrode_count):
+            output_list.append(str(snapshot.kdm_list[num][index]))
+            kdm_list.append(snapshot.kdm_list[num][index])
+        if snapshot.electrode_count > 1:
+            kdm_average: float = sum(kdm_list)/snapshot.global_electrode_count
+            output_list.append(str(kdm_average))
+            kdm_std_list: List[float] = [(x - kdm_average)**2 for x in kdm_list]
+            kdm_std: float = sqrt(sum(kdm_std_list)/(snapshot.global_electrode_count - 1))
+            output_list.append(str(kdm_std))
+    return output_list
+
+
 class TextFileExport():
     """Class for exporting data to a .txt file."""
     def __init__(self,\
@@ -34,6 +212,31 @@ class TextFileExport():
         self.electrode_count: int
         self.frequency_list: List[int]
         self.text_file_handle: str
+
+    def _export_snapshot(self, runtime: Any) -> ExportSnapshot:
+        return ExportSnapshot(
+            analysis_method=runtime.global_analysis_method,
+            plot_summary_mode=runtime.global_plot_summary_mode,
+            peak_method=runtime.global_peak_method,
+            electrode_list=self.electrode_list,
+            electrode_count=self.electrode_count,
+            frequency_list=self.frequency_list,
+            global_electrode_count=runtime.global_electrode_count,
+            global_frequency_list=runtime.global_frequency_list,
+            frame_list=getattr(runtime, "global_frame_list", []),
+            sample_list=getattr(runtime, "global_sample_list", []),
+            data_list=getattr(runtime, "global_data_list", []),
+            peak_list=getattr(runtime, "global_peak_list", []),
+            high_low_dictionary=getattr(runtime, "global_high_low_dictionary", {}),
+            normalized_data_list=getattr(runtime, "global_normalized_data_list", []),
+            offset_normalized_data_list=getattr(runtime, "global_offset_normalized_data_list", []),
+            normalized_ratiometric_data_list=getattr(
+                runtime,
+                "global_normalized_ratiometric_data_list",
+                [],
+            ),
+            kdm_list=getattr(runtime, "global_kdm_list", []),
+        )
 
     def initialize(self,\
                  electrodes: Optional[List[int]] = None,\
@@ -49,78 +252,20 @@ class TextFileExport():
         else:
             self.frequency_list = frequencies
         self.text_file_handle = runtime.global_export_file_path
-        match runtime.global_analysis_method:
+        snapshot = self._export_snapshot(runtime)
+        match snapshot.analysis_method:
             case AnalysisMethod.CONTINUOUS_SCAN:
-                txt_list: List[str] = []
-                match runtime.global_plot_summary_mode:
-                    case PlotSummaryMode.PHE:
-                        match runtime.global_peak_method:
-                            case PeakMethod.POLY:
-                                txt_list.append("Peak Method: Poly Fit")
-                            case PeakMethod.GAUSS:
-                                txt_list.append("Peak Method: Gauss")
-                        with open(self.text_file_handle, "w+", encoding="utf-8", newline="") as output:
-                            writer = csv.writer(output, delimiter=" ")
-                            writer.writerow(txt_list)
-                txt_list = []
-                txt_list.append("File")
-                txt_list.append("Time(Hrs)")
-                for frequency in self.frequency_list:
-                    for electrode in self.electrode_list:
-                        match runtime.global_plot_summary_mode:
-                            case PlotSummaryMode.PHE:
-                                txt_list.append("PeakHeight_E%d_%dHz" % (electrode, frequency))
-                                match runtime.global_peak_method:
-                                    case PeakMethod.GAUSS:
-                                        txt_list.append("PeakLocation_E%d_%dHz" % (electrode, frequency))
-                            case PlotSummaryMode.AUC:
-                                txt_list.append("AUC_E%d_%dHz" % (electrode, frequency))
-                if self.electrode_count > 1:
-                    for frequency in self.frequency_list:
-                        match runtime.global_plot_summary_mode:
-                            case PlotSummaryMode.PHE:
-                                txt_list.append("Avg_PeakHeight_%dHz" % frequency)
-                            case PlotSummaryMode.AUC:
-                                txt_list.append("Avg_AUC_%dHz" % frequency)
-                for frequency in self.frequency_list:
-                    for electrode in self.electrode_list:
-                        txt_list.append(f"Norm_E{electrode}_{frequency}Hz")
-                if self.electrode_count > 1:
-                    for frequency in self.frequency_list:
-                        txt_list.append(f"Average_Norm_{frequency}Hz")
-                    for frequency in self.frequency_list:
-                        txt_list.append(f"SD_Norm_{frequency}Hz")
-                if len(self.frequency_list) > 1:
-                    for electrode in self.electrode_list:
-                        txt_list.append(f"NormalizedRatio_E{electrode}")
-                    if self.electrode_count > 1:
-                        txt_list.append("NormalizedRatioAvg")
-                        txt_list.append("NormalizedRatioSTD")
-                    for electrode in self.electrode_list:
-                        txt_list.append(f"KDM_E{electrode}")
-                    if self.electrode_count > 1:
-                        txt_list.append("AvgKDM")
-                        txt_list.append("KDM_STD")
+                peak_method_row = _build_continuous_scan_peak_method_row(snapshot)
+                if peak_method_row is not None:
+                    with open(self.text_file_handle, "w+", encoding="utf-8", newline="") as output:
+                        writer = csv.writer(output, delimiter=" ")
+                        writer.writerow(peak_method_row)
+                txt_list = _build_continuous_scan_header_row(snapshot)
                 with open(self.text_file_handle, "a", encoding="utf-8", newline="") as output:
                     writer = csv.writer(output, delimiter=" ")
                     writer.writerow(txt_list)
             case AnalysisMethod.FREQUENCY_MAP:
-                txt_list = []
-                txt_list.append("Frequency(Hz)")
-                e_count = 1
-                for _ in runtime.global_frame_list:
-                    match runtime.global_plot_summary_mode:
-                        case PlotSummaryMode.PHE:
-                            txt_list.append(f"PeakHeight_E{e_count}(µA)")
-                        case PlotSummaryMode.AUC:
-                            txt_list.append(f"AUC_E{e_count}")
-                    txt_list.append(f"Charge_E{e_count}(µC)")
-                    e_count += 1
-                if self.electrode_count > 1:
-                    txt_list.append("Avg.PeakHeight(µA)")
-                    txt_list.append("Standard_Deviation(µA)")
-                    txt_list.append("Avg.Charge(µC)")
-                    txt_list.append("Standard_Deviation(µC)")
+                txt_list = _build_frequency_map_header_row(snapshot)
                 with open(self.text_file_handle, "w+", encoding="utf-8", newline="") as output:
                     writer = csv.writer(output, delimiter=" ")
                     writer.writerow(txt_list)
@@ -129,82 +274,7 @@ class TextFileExport():
     def continuous_scan_export(self, file: int) -> None:
         """Export the data from the current file."""
         runtime = _runtime()
-        normalized_frequency_currents: List[float]
-        norm_list: List[float]
-        kdm_list: List[float]
-        running_sum: float
-        average: float
-        average_norm: float
-        index: int = file - 1
-        output_list: List[str] = []
-        output_list.append(str(file))
-        output_list.append(str(runtime.global_sample_list[index]))
-        #--- Peak Height ---#
-        for count in range(len(runtime.global_frequency_list)):
-            for num in range(runtime.global_electrode_count):
-                output_list.append(str(runtime.global_data_list[num][count][index]))
-                match runtime.global_peak_method:
-                    case PeakMethod.GAUSS:
-                        output_list.append(str(runtime.global_peak_list[num][count][index]))
-        #--- Avg. Peak Height ---#
-        if self.electrode_count > 1:
-            for count in range(len(runtime.global_frequency_list)):
-                running_sum = 0
-                for num in range(runtime.global_electrode_count):
-                    running_sum += runtime.global_data_list[num][count][index]
-                average = running_sum/runtime.global_electrode_count
-                output_list.append(str(average))
-        #--- Peak Height/AUC Data Normalization ---#
-        for count in range(len(runtime.global_frequency_list)):
-            for num in range(runtime.global_electrode_count):
-                if runtime.global_frequency_list[count] == runtime.global_high_low_dictionary[HighLow.LOW]:
-                    output_list.append(str(runtime.global_offset_normalized_data_list[num][index]))
-                else:
-                    output_list.append(str(runtime.global_normalized_data_list[num][count][index]))
-        #--- Average normalized data across all electrodes for each frequency ---#
-        if self.electrode_count > 1:
-            for count in range(len(runtime.global_frequency_list)):
-                normalized_frequency_currents = []
-                for num in range(runtime.global_electrode_count):
-                    if runtime.global_frequency_list[count] == runtime.global_high_low_dictionary[HighLow.LOW]:
-                        normalized_frequency_currents.append(runtime.global_offset_normalized_data_list[num][index])
-                    else:
-                        normalized_frequency_currents.append(runtime.global_normalized_data_list[num][count][index])
-                average_norm = sum(normalized_frequency_currents)/runtime.global_electrode_count
-                output_list.append(str(average_norm))
-        #--- Standard Deviation ---#
-        if self.electrode_count > 1:
-            for count in range(len(runtime.global_frequency_list)):
-                normalized_frequency_currents = []
-                for num in range(runtime.global_electrode_count):
-                    normalized_frequency_currents.append(runtime.global_normalized_data_list[num][count][index])
-                average_norm = sum(normalized_frequency_currents)/runtime.global_electrode_count
-                std_list = [(x - average_norm)**2 for x in normalized_frequency_currents]
-                standard_deviation = float(sqrt(sum(std_list)/(runtime.global_electrode_count - 1)))
-                output_list.append(str(standard_deviation))
-        if len(runtime.global_frequency_list) > 1:
-            #--- Append Normalized Ratiometric Data ---#
-            norm_list = []
-            for num in range(runtime.global_electrode_count):
-                output_list.append(str(runtime.global_normalized_ratiometric_data_list[num][index]))
-                norm_list.append(runtime.global_normalized_ratiometric_data_list[num][index])
-            if self.electrode_count > 1:
-                norm_average: float = sum(norm_list)/runtime.global_electrode_count
-                output_list.append(str(norm_average))
-                norm_std_list: List[float] = [(x - norm_average)**2 for x in norm_list]
-                norm_standard_deviation = sqrt(sum(norm_std_list)/(runtime.global_electrode_count - 1))
-                output_list.append(str(norm_standard_deviation))
-            #--- Append KDM ---#
-            kdm_list = []
-            for num in range(runtime.global_electrode_count):
-                output_list.append(str(runtime.global_kdm_list[num][index]))
-                kdm_list.append(runtime.global_kdm_list[num][index])
-            if self.electrode_count > 1:
-                kdm_average: float = sum(kdm_list)/runtime.global_electrode_count
-                output_list.append(str(kdm_average))
-                kdm_std_list: List[float] = [(x - kdm_average)**2 for x in kdm_list]
-                kdm_std: float = sqrt(sum(kdm_std_list)/(runtime.global_electrode_count - 1))
-                output_list.append(str(kdm_std))
+        output_list = _build_continuous_scan_export_row(self._export_snapshot(runtime), file)
         #--- Write the data into the .txt file ---#
         with open(self.text_file_handle, "a", encoding="utf-8", newline="") as text_io_wrapper:
             writer = csv.writer(text_io_wrapper, delimiter=" ")
