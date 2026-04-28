@@ -1,0 +1,657 @@
+{
+  "version": 1,
+  "dataset_root": "/home/akshaj/data/Voltammograms",
+  "baseline_seed_root": "/home/akshaj/data/Voltammograms",
+  "actual_export_root": "",
+  "baseline_provenance": {
+    "source_of_truth": "baseline/expected",
+    "policy": "Fresh current-code baselines under locked settings are the only expected outputs used for regression comparisons.",
+    "legacy_note": "Top-level historical exports under /home/akshaj/data/Voltammograms are retained only as legacy seed/reference inputs and are not implicit compare targets.",
+    "locked_settings": {
+      "import_file_label": "E",
+      "export_data_checked": true,
+      "kdm_mode": "New KDM",
+      "voltage_column": 1,
+      "current_column": 2,
+      "columns_per_electrode": 3,
+      "delimiter": "comma",
+      "encoding": "UTF-8"
+    }
+  },
+  "snapshot_allowlist": [
+    "02_13_2025_acute1",
+    "04.04.2024_MTX_dual"
+  ],
+  "cases": [
+    {
+      "id": "02_13_2025_acute1_e1_poly",
+      "enabled": true,
+      "dataset": "02_13_2025_acute1",
+      "file_number": 638,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_1.txt",
+      "expected_baseline": "baseline/expected/DataExport_1.txt",
+      "actual_export": "baseline/captures/02_13_2025_acute1__run_end_export.txt",
+      "baseline_source": "/home/akshaj/data_local/02_13_2025_acute1"
+    },
+    {
+      "id": "02_13_2025_acute1_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "02_13_2025_acute1",
+      "file_number": 638,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_2.txt",
+      "expected_baseline": "baseline/expected/DataExport_2.txt",
+      "actual_export": "baseline/captures/02_13_2025_acute1_e1_multi_gauss__run_end_export.txt",
+      "numeric_tolerance": 0.0001,
+      "baseline_source": "/home/akshaj/data_local/02_13_2025_acute1"
+    },
+    {
+      "id": "02_13_2025_acute1_e2_poly",
+      "enabled": true,
+      "dataset": "02_13_2025_acute1",
+      "file_number": 638,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_3.txt",
+      "expected_baseline": "baseline/expected/DataExport_3.txt",
+      "actual_export": "baseline/captures/02_13_2025_acute1_e2_poly__run_end_export.txt",
+      "numeric_tolerance": 0.0002,
+      "baseline_source": "/home/akshaj/data_local/02_13_2025_acute1"
+    },
+    {
+      "id": "02_13_2025_acute1_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "02_13_2025_acute1",
+      "file_number": 638,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_4.txt",
+      "expected_baseline": "baseline/expected/DataExport_4.txt",
+      "actual_export": "baseline/captures/02_13_2025_acute1_e2_multi_gauss__run_end_export.txt",
+      "numeric_tolerance": 1e-15,
+      "baseline_source": "/home/akshaj/data_local/02_13_2025_acute1"
+    },
+    {
+      "id": "01_23_2025_1_e1_poly",
+      "enabled": true,
+      "dataset": "01_23_2025_1",
+      "file_number": 711,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_5.txt",
+      "expected_baseline": "baseline/expected/DataExport_5.txt",
+      "actual_export": "DataExport_5.txt"
+    },
+    {
+      "id": "01_23_2025_1_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "01_23_2025_1",
+      "file_number": 711,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_6.txt",
+      "expected_baseline": "baseline/expected/DataExport_6.txt",
+      "actual_export": "DataExport_6.txt"
+    },
+    {
+      "id": "01_23_2025_1_e2_poly",
+      "enabled": true,
+      "dataset": "01_23_2025_1",
+      "file_number": 711,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_7.txt",
+      "expected_baseline": "baseline/expected/DataExport_7.txt",
+      "actual_export": "DataExport_7.txt"
+    },
+    {
+      "id": "01_23_2025_1_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "01_23_2025_1",
+      "file_number": 711,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_8.txt",
+      "expected_baseline": "baseline/expected/DataExport_8.txt",
+      "actual_export": "DataExport_8.txt"
+    },
+    {
+      "id": "01_16_2025_acute2_e1_poly",
+      "enabled": true,
+      "dataset": "01_16_2025_acute2",
+      "file_number": 750,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_9.txt",
+      "expected_baseline": "baseline/expected/DataExport_9.txt",
+      "actual_export": "DataExport_9.txt"
+    },
+    {
+      "id": "01_16_2025_acute2_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "01_16_2025_acute2",
+      "file_number": 750,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_10.txt",
+      "expected_baseline": "baseline/expected/DataExport_10.txt",
+      "actual_export": "DataExport_10.txt"
+    },
+    {
+      "id": "01_16_2025_acute2_e2_poly",
+      "enabled": true,
+      "dataset": "01_16_2025_acute2",
+      "file_number": 750,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_11.txt",
+      "expected_baseline": "baseline/expected/DataExport_11.txt",
+      "actual_export": "DataExport_11.txt"
+    },
+    {
+      "id": "01_16_2025_acute2_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "01_16_2025_acute2",
+      "file_number": 750,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_12.txt",
+      "expected_baseline": "baseline/expected/DataExport_12.txt",
+      "actual_export": "DataExport_12.txt"
+    },
+    {
+      "id": "01_16_2025_acute1_e1_poly",
+      "enabled": true,
+      "dataset": "01_16_2025_acute1",
+      "file_number": 651,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_13.txt",
+      "expected_baseline": "baseline/expected/DataExport_13.txt",
+      "actual_export": "DataExport_13.txt"
+    },
+    {
+      "id": "01_16_2025_acute1_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "01_16_2025_acute1",
+      "file_number": 651,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_14.txt",
+      "expected_baseline": "baseline/expected/DataExport_14.txt",
+      "actual_export": "DataExport_14.txt"
+    },
+    {
+      "id": "01_16_2025_acute1_e2_poly",
+      "enabled": true,
+      "dataset": "01_16_2025_acute1",
+      "file_number": 651,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_15.txt",
+      "expected_baseline": "baseline/expected/DataExport_15.txt",
+      "actual_export": "DataExport_15.txt"
+    },
+    {
+      "id": "01_16_2025_acute1_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "01_16_2025_acute1",
+      "file_number": 651,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_16.txt",
+      "expected_baseline": "baseline/expected/DataExport_16.txt",
+      "actual_export": "DataExport_16.txt"
+    },
+    {
+      "id": "12_13_2024_2_e1_poly",
+      "enabled": true,
+      "dataset": "12_13_2024_2",
+      "file_number": 801,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_17.txt",
+      "expected_baseline": "baseline/expected/DataExport_17.txt",
+      "actual_export": "DataExport_17.txt"
+    },
+    {
+      "id": "12_13_2024_2_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "12_13_2024_2",
+      "file_number": 801,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_18.txt",
+      "expected_baseline": "baseline/expected/DataExport_18.txt",
+      "actual_export": "DataExport_18.txt"
+    },
+    {
+      "id": "12_13_2024_2_e2_poly",
+      "enabled": true,
+      "dataset": "12_13_2024_2",
+      "file_number": 801,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_19.txt",
+      "expected_baseline": "baseline/expected/DataExport_19.txt",
+      "actual_export": "DataExport_19.txt"
+    },
+    {
+      "id": "12_13_2024_2_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "12_13_2024_2",
+      "file_number": 801,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_20.txt",
+      "expected_baseline": "baseline/expected/DataExport_20.txt",
+      "actual_export": "DataExport_20.txt"
+    },
+    {
+      "id": "12_12_2024_2_e1_poly",
+      "enabled": true,
+      "dataset": "12_12_2024_2",
+      "file_number": 489,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_21.txt",
+      "expected_baseline": "baseline/expected/DataExport_21.txt",
+      "actual_export": "DataExport_21.txt"
+    },
+    {
+      "id": "12_12_2024_2_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "12_12_2024_2",
+      "file_number": 489,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_22.txt",
+      "expected_baseline": "baseline/expected/DataExport_22.txt",
+      "actual_export": "DataExport_22.txt"
+    },
+    {
+      "id": "12_12_2024_2_e2_poly",
+      "enabled": true,
+      "dataset": "12_12_2024_2",
+      "file_number": 489,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_23.txt",
+      "expected_baseline": "baseline/expected/DataExport_23.txt",
+      "actual_export": "DataExport_23.txt"
+    },
+    {
+      "id": "12_12_2024_2_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "12_12_2024_2",
+      "file_number": 489,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_24.txt",
+      "expected_baseline": "baseline/expected/DataExport_24.txt",
+      "actual_export": "DataExport_24.txt"
+    },
+    {
+      "id": "12_12_2024_1_e1_poly",
+      "enabled": true,
+      "dataset": "12_12_2024_1",
+      "file_number": 662,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_25.txt",
+      "expected_baseline": "baseline/expected/DataExport_25.txt",
+      "actual_export": "DataExport_25.txt"
+    },
+    {
+      "id": "12_12_2024_1_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "12_12_2024_1",
+      "file_number": 662,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_26.txt",
+      "expected_baseline": "baseline/expected/DataExport_26.txt",
+      "actual_export": "DataExport_26.txt"
+    },
+    {
+      "id": "12_12_2024_1_e2_poly",
+      "enabled": true,
+      "dataset": "12_12_2024_1",
+      "file_number": 662,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_27.txt",
+      "expected_baseline": "baseline/expected/DataExport_27.txt",
+      "actual_export": "DataExport_27.txt"
+    },
+    {
+      "id": "12_12_2024_1_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "12_12_2024_1",
+      "file_number": 662,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_28.txt",
+      "expected_baseline": "baseline/expected/DataExport_28.txt",
+      "actual_export": "DataExport_28.txt"
+    },
+    {
+      "id": "12.15.23_MTX_dual_e1_poly",
+      "enabled": true,
+      "dataset": "12.15.23_MTX_dual",
+      "file_number": 300,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_29.txt",
+      "expected_baseline": "baseline/expected/DataExport_29.txt",
+      "actual_export": "DataExport_29.txt"
+    },
+    {
+      "id": "12.15.23_MTX_dual_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "12.15.23_MTX_dual",
+      "file_number": 300,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_30.txt",
+      "expected_baseline": "baseline/expected/DataExport_30.txt",
+      "actual_export": "DataExport_30.txt"
+    },
+    {
+      "id": "12.15.23_MTX_dual_e2_poly",
+      "enabled": true,
+      "dataset": "12.15.23_MTX_dual",
+      "file_number": 300,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_31.txt",
+      "expected_baseline": "baseline/expected/DataExport_31.txt",
+      "actual_export": "DataExport_31.txt"
+    },
+    {
+      "id": "12.15.23_MTX_dual_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "12.15.23_MTX_dual",
+      "file_number": 300,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_32.txt",
+      "expected_baseline": "baseline/expected/DataExport_32.txt",
+      "actual_export": "DataExport_32.txt"
+    },
+    {
+      "id": "9.13.23_MTX_Dual_e1_poly",
+      "enabled": true,
+      "dataset": "9.13.23_MTX_Dual",
+      "file_number": 919,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_33.txt",
+      "expected_baseline": "baseline/expected/DataExport_33.txt",
+      "actual_export": "DataExport_33.txt"
+    },
+    {
+      "id": "9.13.23_MTX_Dual_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "9.13.23_MTX_Dual",
+      "file_number": 919,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_34.txt",
+      "expected_baseline": "baseline/expected/DataExport_34.txt",
+      "actual_export": "DataExport_34.txt"
+    },
+    {
+      "id": "9.13.23_MTX_Dual_e2_poly",
+      "enabled": true,
+      "dataset": "9.13.23_MTX_Dual",
+      "file_number": 919,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_35.txt",
+      "expected_baseline": "baseline/expected/DataExport_35.txt",
+      "actual_export": "DataExport_35.txt"
+    },
+    {
+      "id": "9.13.23_MTX_Dual_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "9.13.23_MTX_Dual",
+      "file_number": 919,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_36.txt",
+      "expected_baseline": "baseline/expected/DataExport_36.txt",
+      "actual_export": "DataExport_36.txt"
+    },
+    {
+      "id": "9.8.23_MTX_Dual_e1_poly",
+      "enabled": true,
+      "dataset": "9.8.23_MTX_Dual",
+      "file_number": 599,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_37.txt",
+      "expected_baseline": "baseline/expected/DataExport_37.txt",
+      "actual_export": "DataExport_37.txt"
+    },
+    {
+      "id": "9.8.23_MTX_Dual_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "9.8.23_MTX_Dual",
+      "file_number": 599,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_38.txt",
+      "expected_baseline": "baseline/expected/DataExport_38.txt",
+      "actual_export": "DataExport_38.txt"
+    },
+    {
+      "id": "9.8.23_MTX_Dual_e2_poly",
+      "enabled": true,
+      "dataset": "9.8.23_MTX_Dual",
+      "file_number": 599,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_39.txt",
+      "expected_baseline": "baseline/expected/DataExport_39.txt",
+      "actual_export": "DataExport_39.txt"
+    },
+    {
+      "id": "9.8.23_MTX_Dual_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "9.8.23_MTX_Dual",
+      "file_number": 599,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_40.txt",
+      "expected_baseline": "baseline/expected/DataExport_40.txt",
+      "actual_export": "DataExport_40.txt"
+    },
+    {
+      "id": "04.04.2024_MTX_dual_e1_poly",
+      "enabled": true,
+      "dataset": "04.04.2024_MTX_dual",
+      "file_number": 451,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_41.txt",
+      "expected_baseline": "baseline/expected/DataExport_41.txt",
+      "actual_export": "baseline/captures/04.04.2024_MTX_dual__run_end_export.txt",
+      "baseline_source": "/home/akshaj/data_local/04.04.2024_MTX_dual"
+    },
+    {
+      "id": "04.04.2024_MTX_dual_e1_multi_gauss",
+      "enabled": true,
+      "dataset": "04.04.2024_MTX_dual",
+      "file_number": 451,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        1
+      ],
+      "expected_source": "DataExport_42.txt",
+      "expected_baseline": "baseline/expected/DataExport_42.txt",
+      "actual_export": "baseline/captures/04.04.2024_MTX_dual_e1_multi_gauss__run_end_export.txt",
+      "numeric_tolerance": 5e-14,
+      "baseline_source": "/home/akshaj/data_local/04.04.2024_MTX_dual"
+    },
+    {
+      "id": "04.04.2024_MTX_dual_e2_poly",
+      "enabled": true,
+      "dataset": "04.04.2024_MTX_dual",
+      "file_number": 451,
+      "method": "continuous_scan",
+      "peak_method": "poly",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_43.txt",
+      "expected_baseline": "baseline/expected/DataExport_43.txt",
+      "actual_export": "baseline/captures/04.04.2024_MTX_dual_e2_poly__run_end_export.txt",
+      "numeric_tolerance": 0.0002,
+      "baseline_source": "/home/akshaj/data_local/04.04.2024_MTX_dual"
+    },
+    {
+      "id": "04.04.2024_MTX_dual_e2_multi_gauss",
+      "enabled": true,
+      "dataset": "04.04.2024_MTX_dual",
+      "file_number": 451,
+      "method": "continuous_scan",
+      "peak_method": "multi_gauss",
+      "electrodes": [
+        2
+      ],
+      "expected_source": "DataExport_44.txt",
+      "expected_baseline": "baseline/expected/DataExport_44.txt",
+      "actual_export": "baseline/captures/04.04.2024_MTX_dual_e2_multi_gauss__run_end_export.txt",
+      "numeric_tolerance": 7e-16,
+      "baseline_source": "/home/akshaj/data_local/04.04.2024_MTX_dual"
+    }
+  ]
+}
