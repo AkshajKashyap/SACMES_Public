@@ -258,6 +258,13 @@ def _capture_state(sacmes: Any, case: Dict[str, Any], manifest_path: Path, manif
     dataset_name = baseline_capture.dataset_name_from_path(sacmes.global_file_path)
     dataset_capture = baseline_capture.DEFAULT_CAPTURES_DIR / f"{dataset_name}__run_end_export.txt"
     analysis_capture = baseline_capture.DEFAULT_CAPTURES_DIR / f"{dataset_name}__analysis_finished.json"
+    actual_path = baseline_capture.resolve_path(
+        str(case["actual_export"]),
+        manifest=manifest,
+        manifest_path=manifest_path,
+        root_key="actual_export_root",
+    )
+    preserve_dataset_capture = False
     original_dataset_capture = dataset_capture.read_bytes() if dataset_capture.exists() else None
     original_analysis_capture = analysis_capture.read_bytes() if analysis_capture.exists() else None
 
@@ -286,20 +293,18 @@ def _capture_state(sacmes: Any, case: Dict[str, Any], manifest_path: Path, manif
             },
             manifest_path=manifest_path,
         )
-        actual_path = baseline_capture.resolve_path(
-            str(case["actual_export"]),
-            manifest=manifest,
-            manifest_path=manifest_path,
-            root_key="actual_export_root",
-        )
-        baseline_capture.ensure_parent(actual_path)
-        shutil.copyfile(dataset_capture, actual_path)
+        if dataset_capture.resolve() == actual_path.resolve():
+            preserve_dataset_capture = True
+        else:
+            baseline_capture.ensure_parent(actual_path)
+            shutil.copyfile(dataset_capture, actual_path)
         return actual_path
     finally:
-        if original_dataset_capture is None:
-            dataset_capture.unlink(missing_ok=True)
-        else:
-            dataset_capture.write_bytes(original_dataset_capture)
+        if not preserve_dataset_capture:
+            if original_dataset_capture is None:
+                dataset_capture.unlink(missing_ok=True)
+            else:
+                dataset_capture.write_bytes(original_dataset_capture)
         if original_analysis_capture is None:
             analysis_capture.unlink(missing_ok=True)
         else:
