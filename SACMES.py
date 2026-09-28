@@ -55,6 +55,7 @@ from data_io import (
     read_data as data_io_read_data,
 )
 from export_text import ExportSnapshot, TextFileExport, set_runtime_module as set_text_export_runtime_module
+from gui_layout import fit_window_to_screen
 from normalization_math import (
     calculate_kdm,
     calculate_low_frequency_offset,
@@ -1351,6 +1352,9 @@ class CheckPoint():
         self.show_frame(str(global_analysis_method))
         # raises the figure for electrode 1:
         self.show_plot(global_plot_values[0])
+        # Keep the requested plot and control sizes from pushing the window
+        # decorations beyond the available display.
+        fit_window_to_screen(self.controller)
 
     def stop(self) -> None:
         """Callback for the Stop button in the user interface; stop searching for file 1,
@@ -2322,7 +2326,7 @@ class ContinuousScanVisualizationFrame(ttk.Frame):
         #--- for resize ---#
         self.columnconfigure(0, weight=2)
         self.columnconfigure(1, weight=1)
-        self.rowconfigure(2, weight=2)
+        self.rowconfigure(1, weight=5)
         ttk.Label(self, text=electrode_frame, font=HUGE_FONT).\
             grid(row=0, column=0, pady=5, sticky="n")
         ttk.Label(self, text="", font=MEDIUM_FONT).\
@@ -2344,8 +2348,9 @@ class ContinuousScanVisualizationFrame(ttk.Frame):
             canvas = FigureCanvasTkAgg(fig, self)
             canvas.draw()
             # does not affect size of figure within plot container:
-            canvas.get_tk_widget().grid(row=2, columnspan=2, pady=6, ipady=5, sticky="sew")
-            #--- add weight to the second row for resizing ---#
+            canvas.get_tk_widget().grid(row=2, columnspan=2, pady=6, ipady=5, sticky="nsew")
+            # Give both canvases resize weight in approximately the same
+            # proportion as their initial figure heights.
             self.rowconfigure(2, weight=2)
 
 class FrequencyMapVisualizationFrame(ttk.Frame):
@@ -2356,7 +2361,7 @@ class FrequencyMapVisualizationFrame(ttk.Frame):
         #--- for resize ---#
         self.columnconfigure(0, weight=2)
         self.columnconfigure(1, weight=1)
-        self.rowconfigure(2, weight=2)
+        self.rowconfigure(1, weight=1)
         ttk.Label(self, text=electrode_frame, font=HUGE_FONT).\
             grid(row=0, column=0, pady=5, sticky="n")
         ttk.Label(self, text="", font=MEDIUM_FONT).\
