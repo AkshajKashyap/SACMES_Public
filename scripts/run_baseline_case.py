@@ -207,7 +207,7 @@ def _initialize_headless_storage(sacmes: Any) -> None:
                 sacmes.MultiGausFitNoise_LSE(len(adjusted_potentials), sacmes.global_options_Gauss)
             )
 
-    sacmes.global_wait_time = sacmes.WaitTime()
+    sacmes.global_normalization_request = sacmes.NormalizationRequest()
     sacmes.global_track = sacmes.Track()
     sacmes.global_data_normalization = sacmes.DataNormalization()
     sacmes.global_text_file_export = sacmes.TextFileExport().initialize(

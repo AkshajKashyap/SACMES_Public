@@ -74,6 +74,7 @@ from sacmes_shared import (
     XBound,
     YBound,
 )
+from workflow_state import FileProgress, NormalizationRequest
 
 plt.style.use("ggplot")
 set_text_export_runtime_module(sys.modules[__name__])
@@ -1306,7 +1307,7 @@ class CheckPoint():
 
     def proceed(self) -> None:
         """Actually initialize the program and begin data acquisition, analysis, and animation."""
-        global global_wait_time,\
+        global global_normalization_request,\
             global_track,\
             global_data_normalization,\
             global_post_analysis
@@ -1315,7 +1316,7 @@ class CheckPoint():
         ##############################
         ### Synchronization Classes ###
         ##############################
-        global_wait_time = WaitTime()
+        global_normalization_request = NormalizationRequest()
         global_track = Track()
         ######################################################
         ### Matplotlib Canvas, Figure, and Artist Creation ###
@@ -1870,7 +1871,7 @@ class ContinuousScanManipulationFrame(ttk.Frame):
         global_normalization_point = int(self.set_point_norm.get())
         file = int(global_file_label.cget("text"))
         if file >= global_normalization_point:
-            global_wait_time.normalization_wait_time()
+            global_normalization_request.request()
         else:
             global_norm_warning.config(foreground="red")
             global_norm_warning.config(text=f"File {global_normalization_point}" +\
@@ -4059,7 +4060,7 @@ class DataNormalization():
         ## If the Normalization Point has been changed and the current file is ##
         ## greater than the new point, renormalize the data to the new point   ##
         #########################################################################
-        if global_normalization_waiting:
+        if global_normalization_request.waiting:
             index = file - 1
             normalization_index = global_normalization_point - 1
             for num in range(global_electrode_count):
@@ -4100,7 +4101,7 @@ class DataNormalization():
             #--- Indicate that the data has been normalized to the new normalization_point ---#
             global_norm_warning.config(foreground="green")
             global_norm_warning.config(text=f"Normalized to file {global_normalization_point}")
-            global_wait_time.normalization_proceed()
+            global_normalization_request.complete()
             #-- if .txt file export has been activated, update the exported data ---#
             if global_text_file_export_activated:
                 global_text_file_export.txt_file_normalization()
@@ -4498,7 +4499,7 @@ class PostAnalysis(ttk.Frame):
         global_normalization_point = int(self.set_point_norm.get())
         file = int(global_file_label.cget("text"))
         if file >= global_normalization_point:
-            global_wait_time.normalization_wait_time()
+            global_normalization_request.request()
         else:
             global_norm_warning.config(foreground="red")
             global_norm_warning.config(text=f"File {global_normalization_point}" +\
@@ -4658,29 +4659,15 @@ class PostAnalysis(ttk.Frame):
                 ###### Classes and Functions for Real-Time Tracking and Text File Export ######
                 ###############################################################################
                 ###############################################################################
-class WaitTime():
-    """Class for normalization signalling."""
-    def __init__(self):
-        global global_normalization_waiting
-        global_normalization_waiting = False
-
-    def normalization_wait_time(self) -> None:
-        global global_normalization_waiting
-        global_normalization_waiting = True
-
-    def normalization_proceed(self) -> None:
-        global global_normalization_waiting
-        global_normalization_waiting = False
-
 class Track():
-    """Class for tracking the number of files analyzed."""
+    """Coordinate side effects when all electrodes complete a file."""
     def __init__(self):
-        self.track_list: List[int] = [1]*global_number_of_files_to_process
+        self.progress = FileProgress(global_number_of_files_to_process, global_electrode_count)
 
     def tracking(self, file: int, frequency: Optional[int]) -> None:
         global global_ratiometric_check
-        index: int = file - 1
-        if self.track_list[index] == global_electrode_count:
+        completed = self.progress.record_completion(file)
+        if completed:
             match global_analysis_method:
                 case AnalysisMethod.CONTINUOUS_SCAN:
                     _update_global_lists(file)
@@ -4695,7 +4682,7 @@ class Track():
                             global_text_file_export.txt_file_normalization()
                         global_ratiometric_check = False
                 case AnalysisMethod.FREQUENCY_MAP:
-                    if self.track_list[index] == global_electrode_count:
+                    if completed:
                         if global_text_file_export_activated:
                             if frequency is None:
                                 internal_error("tracking: frequency is None")
@@ -4705,9 +4692,6 @@ class Track():
                                     frequency,
                                     text_export_snapshot(),
                                 )
-            self.track_list[index] = 1
-        else:
-            self.track_list[index] += 1
 global_analysis_method: AnalysisMethod = AnalysisMethod.CONTINUOUS_SCAN
 global_kdm_method: KDMMethod = KDMMethod.OLD
 global_peak_method: PeakMethod = PeakMethod.POLY
@@ -4738,7 +4722,7 @@ global_export_path: str = ""
 global_data_directory: str
 global_file_handle: str
 global_export_file_path: str
-global_wait_time: WaitTime
+global_normalization_request: NormalizationRequest
 global_track: Track
 global_data_normalization: DataNormalization
 global_post_analysis: PostAnalysis
@@ -4755,7 +4739,6 @@ global_x_axis_mode: PlotTimeReportingMode = PlotTimeReportingMode.EXPERIMENT_TIM
 global_frame_reference: Union[ContinuousScanVisualizationFrame, FrequencyMapVisualizationFrame]
 global_plot_container: ttk.Frame
 global_kdm_list: List[List[float]]
-global_normalization_waiting: bool
 global_figures: List[Tuple[matplotlib.figure.Figure, List[List[matplotlib.axes.Axes]]]]
 global_electrode_count: int
 global_electrode_list: List[int]
