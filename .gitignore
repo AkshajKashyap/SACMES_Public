@@ -1,11 +1,11 @@
-# Local baseline harness artifacts
-baseline/
+# Python-generated cache and bytecode
+__pycache__/
+*.py[cod]
+
+# Local development-tool state
+/.codex
+
+# Local baseline harness artifacts; keep the manifest version-controlled
+baseline/*
+!baseline/manifest.json
 generated_exports/
-
-# keep baseline captures ignored, but allow manifest
-baseline/*
-!baseline/manifest.json
-
-# keep baseline captures ignored, but allow manifest
-baseline/*
-!baseline/manifest.json
