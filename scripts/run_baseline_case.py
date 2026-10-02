@@ -144,6 +144,7 @@ def _configure_runtime(
     sacmes.global_real_time_sample_label = _NullWidget("0")
     sacmes.global_file_label = _NullWidget("1")
     sacmes.global_norm_warning = _NullWidget("")
+    sacmes.global_run_config = sacmes.capture_run_config()
 
 
 def _initialize_headless_storage(sacmes: Any) -> None:

@@ -61,6 +61,7 @@ from normalization_math import (
     calculate_low_frequency_offset,
     calculate_normalized_ratio,
 )
+from run_config import RunConfig
 from sacmes_shared import (
     AnalysisMethod,
     Delimiter,
@@ -190,17 +191,35 @@ def internal_error(internal_error_message: str) -> NoReturn:
     print("internal_error:", internal_error_message)
     sys.exit(1)
 
-def _data_io_config() -> DataIOConfig:
-    return DataIOConfig(
-        file_name_pattern=global_file_name_pattern,
+def capture_run_config() -> RunConfig:
+    """Capture settings that remain fixed until this analysis run ends."""
+    return RunConfig(
+        analysis_method=global_analysis_method,
+        peak_method=global_peak_method,
+        kdm_method=global_kdm_method,
+        plot_summary_mode=global_plot_summary_mode,
+        x_axis_mode=global_x_axis_mode,
+        electrodes=tuple(global_electrode_list),
+        frequencies=tuple(global_frequency_list),
         electrodes_mode=global_electrodes_mode,
+        file_name_pattern=global_file_name_pattern,
         handle_variable=global_handle_variable,
         file_encoding=global_file_encoding,
         delimiter=global_delimiter,
-        voltage_column_index=global_voltage_column_index,
-        base_column_index_for_currents=global_base_column_index_for_currents,
+        voltage_column=global_voltage_column,
+        current_column=global_current_column,
         columns_per_electrode=global_columns_per_electrode,
+        number_of_files=global_number_of_files_to_process,
+        sample_rate=global_sample_rate,
+        search_interval=global_search_interval,
+        resize_interval=global_resize_interval,
+        export_enabled=global_text_file_export_activated,
+        injection_enabled=global_injection_selected,
     )
+
+
+def _data_io_config() -> DataIOConfig:
+    return global_run_config.data_io_config()
 
 def make_file_name(file_index: int, electrode: int, frequency: int) -> str:
     return data_io_make_file_name(_data_io_config(), file_index, electrode, frequency)
@@ -1051,7 +1070,8 @@ class InputFrame(ttk.Frame):
 
     def start_program(self) -> None:
         """Initialize the program and begin data acquisition, analysis, and animation."""
-        global global_handle_variable,\
+        global global_run_config,\
+            global_handle_variable,\
             global_search_interval,\
             global_resize_interval,\
             global_injection_point,\
@@ -1123,6 +1143,7 @@ class InputFrame(ttk.Frame):
         global_normalization_vault = []
         # append the starting normalization point:
         global_normalization_vault.append(global_normalization_point)
+        global_run_config = capture_run_config()
         ################################################################
         ### If all checkpoints have been met, initialize the program ###
         ################################################################
@@ -4722,6 +4743,7 @@ global_export_path: str = ""
 global_data_directory: str
 global_file_handle: str
 global_export_file_path: str
+global_run_config: RunConfig
 global_normalization_request: NormalizationRequest
 global_track: Track
 global_data_normalization: DataNormalization
