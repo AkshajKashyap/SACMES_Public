@@ -158,8 +158,7 @@ def _initialize_headless_storage(sacmes: Any) -> None:
     sacmes.global_plot_list_continuous_scan = []
     sacmes.global_ratiometric_plots = []
     sacmes.global_frame_list = [f"Electrode {electrode}" for electrode in sacmes.global_electrode_list]
-    sacmes.global_file_list = []
-    sacmes.global_sample_list = []
+    sacmes._initialize_continuous_scan_timeline()
 
     sacmes.global_xstart = [[0.0] * length for _ in range(electrode_count)]
     sacmes.global_xend = [[0.0] * length for _ in range(electrode_count)]

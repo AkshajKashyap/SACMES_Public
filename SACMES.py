@@ -61,6 +61,7 @@ from normalization_math import (
     calculate_low_frequency_offset,
     calculate_normalized_ratio,
 )
+from result_timeline import ContinuousScanTimeline
 from run_config import RunConfig
 from sacmes_shared import (
     AnalysisMethod,
@@ -271,12 +272,21 @@ def get_time(file_index: int) -> float:
     exp_time = (os.path.getmtime(file_now) - os.path.getmtime(file_1))/3600 # in hours
     return exp_time
 
+def _initialize_continuous_scan_timeline() -> None:
+    """Create fresh Continuous Scan timeline state and legacy list aliases."""
+    global global_continuous_scan_timeline, global_file_list, global_sample_list
+    global_continuous_scan_timeline = ContinuousScanTimeline()
+    global_file_list = global_continuous_scan_timeline.files
+    global_sample_list = global_continuous_scan_timeline.samples
+
 def _update_global_lists(file: int):
     """Record the file number and sample rate in global lists."""
-    if file not in global_file_list:
-        global_file_list.append(file)
-        sample: float = round(get_time(len(global_file_list)), 3)
-        global_sample_list.append(sample)
+    accepted = global_continuous_scan_timeline.record(
+        file,
+        lambda completed_count: round(get_time(completed_count), 3),
+    )
+    if accepted:
+        sample = global_continuous_scan_timeline.samples[-1]
         global_real_time_sample_label.config(text=str(sample))
         if file != global_number_of_files_to_process:
             global_file_label.config(text=str(file + 1))
@@ -2424,10 +2434,8 @@ class InitializeContinuousCanvas():
             global_normalized_data_list,\
             global_data_list,\
             global_plot_list_continuous_scan,\
-            global_file_list,\
             global_figures,\
             global_frame_list,\
-            global_sample_list,\
             global_plot_frames,\
             global_plot_values,\
             global_gauss_solver,\
@@ -2505,8 +2513,7 @@ class InitializeContinuousCanvas():
         global_ratiometric_plots = []
         global_frame_list = []
         #--- Misc Lists ---#
-        global_file_list = []
-        global_sample_list = []        # For plotting Peak Height vs. sample rate
+        _initialize_continuous_scan_timeline()
         ######################################################
         ### Create a figure and artists for each electrode ###
         ######################################################
@@ -4797,6 +4804,7 @@ global_plot_list_frequency_map: List[Tuple[matplotlib.lines.Line2D,\
 global_frame_list: List[str]
 global_ratiometric_plots: List[List[matplotlib.lines.Line2D]]
 global_text_file_export: TextFileExport
+global_continuous_scan_timeline: ContinuousScanTimeline
 global_file_list: List[int]
 global_animations: List[ElectrochemicalAnimation]
 global_data_list: List[List[List[float]]]

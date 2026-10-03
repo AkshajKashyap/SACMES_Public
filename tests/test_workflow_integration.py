@@ -7,6 +7,101 @@ import SACMES as sacmes
 from sacmes_shared import AnalysisMethod
 
 
+class UpdateGlobalListsCharacterizationTest(TestCase):
+    def setUp(self):
+        sacmes._initialize_continuous_scan_timeline()
+        sacmes.global_number_of_files_to_process = 3
+        sacmes.global_real_time_sample_label = mock.Mock()
+        sacmes.global_file_label = mock.Mock()
+
+    def test_first_unique_file_appends_rounded_paired_sample(self):
+        def get_time(completed_file_count):
+            self.assertEqual(sacmes.global_file_list, [2])
+            self.assertEqual(completed_file_count, 1)
+            return 1.23456
+
+        with mock.patch.object(sacmes, "get_time", side_effect=get_time) as get_time_mock:
+            sacmes._update_global_lists(2)
+
+        self.assertEqual(sacmes.global_file_list, [2])
+        self.assertEqual(sacmes.global_sample_list, [1.235])
+        self.assertEqual(len(sacmes.global_file_list), len(sacmes.global_sample_list))
+        get_time_mock.assert_called_once_with(1)
+        sacmes.global_real_time_sample_label.config.assert_called_once_with(text="1.235")
+        sacmes.global_file_label.config.assert_called_once_with(text="3")
+
+    def test_duplicate_file_changes_neither_list_or_labels(self):
+        sacmes.global_continuous_scan_timeline.record(
+            1,
+            lambda _completed_count: 0.125,
+        )
+
+        with mock.patch.object(sacmes, "get_time") as get_time_mock:
+            sacmes._update_global_lists(1)
+
+        self.assertEqual(sacmes.global_file_list, [1])
+        self.assertEqual(sacmes.global_sample_list, [0.125])
+        self.assertEqual(len(sacmes.global_file_list), len(sacmes.global_sample_list))
+        get_time_mock.assert_not_called()
+        sacmes.global_real_time_sample_label.config.assert_not_called()
+        sacmes.global_file_label.config.assert_not_called()
+
+    def test_out_of_order_files_preserve_notification_order_and_pairing(self):
+        with mock.patch.object(sacmes, "get_time", side_effect=[0.1114, 0.2226, 0.3333]) as get_time_mock:
+            for file in (2, 1, 3):
+                sacmes._update_global_lists(file)
+                self.assertEqual(len(sacmes.global_file_list), len(sacmes.global_sample_list))
+
+        self.assertEqual(sacmes.global_file_list, [2, 1, 3])
+        self.assertEqual(sacmes.global_sample_list, [0.111, 0.223, 0.333])
+        self.assertEqual(
+            get_time_mock.call_args_list,
+            [mock.call(1), mock.call(2), mock.call(3)],
+        )
+
+    def test_file_label_advances_for_nonfinal_files_only(self):
+        with mock.patch.object(sacmes, "get_time", side_effect=[0.1, 0.2]):
+            sacmes._update_global_lists(1)
+            sacmes._update_global_lists(3)
+
+        self.assertEqual(
+            sacmes.global_file_label.config.call_args_list,
+            [mock.call(text="2")],
+        )
+
+    def test_legacy_lists_are_exact_timeline_aliases(self):
+        self.assertIs(
+            sacmes.global_file_list,
+            sacmes.global_continuous_scan_timeline.files,
+        )
+        self.assertIs(
+            sacmes.global_sample_list,
+            sacmes.global_continuous_scan_timeline.samples,
+        )
+
+    def test_new_run_gets_fresh_owner_and_list_identities(self):
+        first_timeline = sacmes.global_continuous_scan_timeline
+        first_files = sacmes.global_file_list
+        first_samples = sacmes.global_sample_list
+        first_timeline.record(1, lambda _completed_count: 0.0)
+
+        sacmes._initialize_continuous_scan_timeline()
+
+        self.assertIsNot(sacmes.global_continuous_scan_timeline, first_timeline)
+        self.assertIsNot(sacmes.global_file_list, first_files)
+        self.assertIsNot(sacmes.global_sample_list, first_samples)
+        self.assertEqual(sacmes.global_file_list, [])
+        self.assertEqual(sacmes.global_sample_list, [])
+        self.assertIs(
+            sacmes.global_file_list,
+            sacmes.global_continuous_scan_timeline.files,
+        )
+        self.assertIs(
+            sacmes.global_sample_list,
+            sacmes.global_continuous_scan_timeline.samples,
+        )
+
+
 class TrackCharacterizationTest(TestCase):
     def setUp(self):
         sacmes.global_number_of_files_to_process = 3
